@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>貴賓名單</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500&display=swap');
+
+  :root {
+    --gold: #B8963E;
+    --gold-light: #D4AF65;
+    --cream: #FAF7F2;
+    --ink: #1C1A17;
+    --ink-soft: #4A4540;
+    --rule: #DDD5C8;
+    --card-bg: #FFFFFF;
+    --hover-bg: #F5F0E8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  header {
+    text-align: center;
+    padding: 48px 24px 36px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--card-bg);
+    position: relative;
+  }
+
+  header::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 3px;
+    background: var(--gold);
+    margin: 0 auto 20px;
+  }
+
+  header h1 {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--ink);
+  }
+
+  header p {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.08em;
+  }
+
+  .status-bar {
+    text-align: center;
+    padding: 12px 24px 24px;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+  }
+
+  .upload-spinner {
+    position: absolute;
+    inset: 0;
+    background: rgba(28,26,23,0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+  }
+
+  .grid-container {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 24px 60px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+  }
+
+  .guest-card {
+    background: var(--card-bg);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+    position: relative;
+  }
+
+  .guest-card:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+  }
+
+  .guest-number {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    font-size: 0.65rem;
+    color: var(--gold);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    line-height: 1;
+  }
+
+  /* Photo area */
+  .photo-area {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: var(--hover-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .photo-area img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  .upload-icon {
+    width: 36px;
+    height: 36px;
+    border: 1.5px dashed var(--gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .upload-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--gold);
+    fill: none;
+  }
+
+  .upload-label-text {
+    font-size: 0.68rem;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+  }
+
+  .photo-area:hover .upload-icon {
+    background: rgba(184,150,62,0.08);
+  }
+
+  /* Overlay on hover when photo exists */
+  .photo-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(28,26,23,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .photo-area:hover .photo-overlay {
+    opacity: 1;
+  }
+
+  .photo-overlay span {
+    color: #fff;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    background: rgba(184,150,62,0.85);
+    padding: 4px 10px;
+    border-radius: 2px;
+  }
+
+  /* Info section */
+  .guest-info {
+    width: 100%;
+    padding: 12px 12px 14px;
+    text-align: center;
+    border-top: 1px solid var(--rule);
+  }
+
+  .guest-name {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+
+  .guest-church {
+    margin-top: 4px;
+    font-size: 0.68rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.03em;
+    line-height: 1.4;
+    min-height: 1.2em;
+  }
+
+  /* Hidden file input */
+  input[type="file"] {
+    display: none;
+  }
+
+  @media (max-width: 600px) {
+    .grid-container {
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 14px;
+      padding: 0 16px 40px;
+    }
+    header h1 { font-size: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>貴賓名單</h1>
+  <p>點擊照片區域可上傳個人照片 · 自動雲端同步</p>
+</header>
+
+<div class="grid-container" id="guestGrid"></div>
+<div class="status-bar" id="statusBar">正在載入已上傳的照片…</div>
+
+<script>
+const CLOUD_NAME = 'dpzl5kh83';
+const UPLOAD_PRESET = 'vip-guests';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwP6jcuMHNw-0ACPDBl6w1T31tetrjOyPeCp0zy4cPtdKH_jvYWNw-UWdqrSpS1sv6G/exec';
+
+const guests = [
+  { name: "周信榮牧師", church: "永光長老教會" },
+  { name: "潘純冕牧師", church: "永光長老教會" },
+  { name: "楊德仁牧師", church: "浸聯會" },
+  { name: "方麗玲師母", church: "浸聯會" },
+  { name: "莊承翰牧師", church: "基督徒宜蘭禮拜堂" },
+  { name: "林素秋師母", church: "基督徒宜蘭禮拜堂" },
+  { name: "高德積牧師", church: "土城光之城行道會" },
+  { name: "朱筱惠師母", church: "土城光之城行道會" },
+  { name: "湯簡如牧師", church: "楊梅靈糧堂" },
+  { name: "佘晨捷執行長", church: "" },
+  { name: "李智偉弟兄", church: "新店行道會" },
+  { name: "白晶姐妹", church: "新店行道會" },
+  { name: "林呈旭牧師", church: "台北真理堂" },
+  { name: "章啟明長老", church: "全球華人國度網絡 GCKN" },
+  { name: "余慶榮牧師", church: "客福" },
+  { name: "劉仁泓牧師", church: "台北光點教會" },
+  { name: "邱彼得牧師", church: "苗栗卓蘭教會" },
+  { name: "高堂恩牧師", church: "台灣信義會" },
+  { name: "黃鏡文師母", church: "新莊真理堂" },
+  { name: "彭智永牧師", church: "花蓮真理堂" },
+  { name: "劉怡君師母", church: "花蓮真理堂" },
+  { name: "周宏昌牧師", church: "新莊真理堂" },
+  { name: "于蓓蓓師母", church: "新莊真理堂" },
+  { name: "彭家盛牧師", church: "中永和真理堂" },
+  { name: "楊聲俐師母", church: "中永和真理堂" },
+  { name: "杜振發牧師", church: "土城真理堂" },
+  { name: "沈智惠師母", church: "土城真理堂" },
+  { name: "蘇奕璋牧師", church: "台北真理堂" },
+  { name: "詹文仁牧師", church: "台南真理堂" },
+  { name: "鄧宙攀牧師", church: "桃園真理堂" },
+  { name: "黃國康牧師", church: "新店真理堂" },
+  { name: "陳一榮牧師", church: "後勁教會" },
+  { name: "劉祖慧師母", church: "後勁教會" },
+  { name: "郭英馥牧師", church: "北大真理堂" },
+  { name: "林錫麟長老", church: "台北真理堂" },
+  { name: "鄭博仁牧師", church: "高雄武昌教會" },
+  { name: "高忠輝", church: "台東聯禱會主席" },
+  { name: "溫淑英", church: "" },
+  { name: "高永旭", church: "台東聯禱會副主席" },
+  { name: "羅寧沛", church: "" },
+  { name: "邱德福", church: "台東聯禱會副主席" },
+  { name: "邱周慧珍", church: "" },
+  { name: "陳雅萍", church: "台東博愛浸信會" },
+  { name: "余軒", church: "" },
+  { name: "溫力傳", church: "浸信會豐田讚美教會" },
+  { name: "柯軒羽", church: "" },
+  { name: "王述年", church: "台東興起先鋒教會" },
+  { name: "高爾諾", church: "" },
+  { name: "陳秀儀", church: "台東協同會" },
+  { name: "張桂仁", church: "射馬干台福基督教會" },
+  { name: "鄭陞龍", church: "" },
+  { name: "江美慧", church: "" },
+  { name: "陳健誌", church: "台東真理堂" },
+  { name: "王之華", church: "" },
+];
+
+const grid = document.getElementById('guestGrid');
+const statusBar = document.getElementById('statusBar');
+const imgEls = [];
+const placeholders = [];
+const overlays = [];
+const spinners = [];
+
+guests.forEach((guest, idx) => {
+  const card = document.createElement('div');
+  card.className = 'guest-card';
+
+  const num = document.createElement('span');
+  num.className = 'guest-number';
+  num.textContent = String(idx + 1).padStart(2, '0');
+
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+
+  const photoArea = document.createElement('div');
+  photoArea.className = 'photo-area';
+  photoArea.title = '點擊上傳照片';
+
+  const placeholder = document.createElement('div');
+  placeholder.className = 'upload-placeholder';
+  placeholder.innerHTML = `
+    <div class="upload-icon">
+      <svg viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="3" stroke-width="1.5"/>
+        <path d="M3 15l5-5 4 4 3-3 6 6" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <span class="upload-label-text">上傳照片</span>
+  `;
+  placeholders.push(placeholder);
+
+  const img = document.createElement('img');
+  img.alt = guest.name;
+  img.style.display = 'none';
+  imgEls.push(img);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'photo-overlay';
+  overlay.innerHTML = '<span>更換照片</span>';
+  overlay.style.display = 'none';
+  overlays.push(overlay);
+
+  const spinner = document.createElement('div');
+  spinner.className = 'upload-spinner';
+  spinner.textContent = '上傳中…';
+  spinners.push(spinner);
+
+  photoArea.appendChild(placeholder);
+  photoArea.appendChild(img);
+  photoArea.appendChild(overlay);
+  photoArea.appendChild(spinner);
+  photoArea.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    spinner.style.display = 'flex';
+    statusBar.textContent = `正在上傳 ${guest.name} 的照片…`;
+
+    try {
+      // 1. 上傳到 Cloudinary
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', UPLOAD_PRESET);
+      fd.append('public_id', `guest_${idx}`);
+      fd.append('overwrite', 'true');
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: fd
+      });
+      const data = await res.json();
+
+      if (!data.secure_url) throw new Error('Cloudinary 上傳失敗');
+
+      const url = data.secure_url;
+
+      // 2. 存 URL 到 GAS / Google Sheets
+      await fetch(GAS_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ index: idx, url: url })
+      });
+
+      // 3. 顯示照片
+      showPhoto(idx, url);
+      statusBar.textContent = `✓ ${guest.name} 的照片已上傳並同步`;
+
+    } catch (err) {
+      alert('上傳失敗，請重試：' + err.message);
+      statusBar.textContent = '上傳失敗，請重試';
+    }
+
+    spinner.style.display = 'none';
+    fileInput.value = '';
+  });
+
+  const info = document.createElement('div');
+  info.className = 'guest-info';
+  info.innerHTML = `
+    <div class="guest-name">${guest.name}</div>
+    <div class="guest-church">${guest.church}</div>
+  `;
+
+  card.appendChild(num);
+  card.appendChild(fileInput);
+  card.appendChild(photoArea);
+  card.appendChild(info);
+  grid.appendChild(card);
+});
+
+function showPhoto(idx, url) {
+  imgEls[idx].src = url;
+  imgEls[idx].style.display = 'block';
+  placeholders[idx].style.display = 'none';
+  overlays[idx].style.display = 'flex';
+}
+
+// 頁面載入時從 GAS 讀取所有已上傳的照片
+async function loadAll() {
+  try {
+    const res = await fetch(GAS_URL);
+    const photos = await res.json();
+    let count = 0;
+    for (const [idx, url] of Object.entries(photos)) {
+      if (url && imgEls[idx]) {
+        showPhoto(parseInt(idx), url);
+        count++;
+      }
+    }
+    statusBar.textContent = count > 0
+      ? `已載入 ${count} 張照片 · 點擊任一貴賓可上傳或更換照片`
+      : '尚未上傳任何照片 · 點擊貴賓卡片開始上傳';
+  } catch (err) {
+    statusBar.textContent = '載入照片失敗，請重新整理頁面';
+  }
+}
+
+loadAll();
+</script>
+</body>
+</html>
